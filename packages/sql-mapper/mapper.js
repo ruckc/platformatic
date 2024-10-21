@@ -108,7 +108,7 @@ async function createConnectionPool ({ log, connectionString, poolSize, idleTime
   return { db, sql }
 }
 
-async function connect ({ connectionString, log, onDatabaseLoad, poolSize, include = {}, ignore = {}, autoTimestamp = true, hooks = {}, schema, limit = {}, dbschema, cache, idleTimeoutMilliseconds, queueTimeoutMilliseconds, acquireLockTimeoutMilliseconds }) {
+async function connect ({ connectionString, log, onDatabaseLoad, poolSize, include = {}, ignore = {}, autoTimestamp = true, hooks = {}, schema, limit = {}, dbschema, dbschemaViews, cache, idleTimeoutMilliseconds, queueTimeoutMilliseconds, acquireLockTimeoutMilliseconds }) {
   if (typeof autoTimestamp === 'boolean' && autoTimestamp === true) {
     autoTimestamp = defaultAutoTimestampFields
   }
@@ -146,9 +146,10 @@ async function connect ({ connectionString, log, onDatabaseLoad, poolSize, inclu
 
     if (!dbschema) {
       dbschema = await queries.listTables(db, sql, schemaList)
+      dbschemaViews = await queries.listViews(db, sql, schemaList)
 
       // TODO make this parallel or a single query
-      for (const wrap of dbschema) {
+      for (const wrap of [...dbschema, ...dbschemaViews]) {
         const { table, schema } = wrap
         const columns = await queries.listColumns(db, sql, table, schema)
         wrap.constraints = await queries.listConstraints(db, sql, table, schema)

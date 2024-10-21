@@ -23,6 +23,17 @@ async function listTables (db, sql) {
 
 module.exports.listTables = listTables
 
+async function listViews (db, sql) {
+  const res = await db.query(sql`
+    SELECT name FROM sqlite_master
+    WHERE type='view'
+  `)
+  // sqlite has no schemas
+  return res.map(r => ({ schema: null, table: r.name }))
+}
+
+module.exports.listViews = listViews
+
 async function listColumns (db, sql, table) {
   // pragma_table_info is not returning hidden column which tells if the column is generated or not
   // therefore it is changed to pragma_table_xinfo

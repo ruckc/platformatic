@@ -8,14 +8,33 @@ async function listTables (db, sql, schemas) {
     const res = await db.query(sql`
       SELECT TABLE_SCHEMA, TABLE_NAME
       FROM information_schema.tables
-      WHERE table_schema in (${schemaList})
+      WHERE table_type != 'VIEW' AND table_schema in (${schemaList})
     `)
     return res.map(r => ({ schema: r.TABLE_SCHEMA, table: r.TABLE_NAME }))
   } else {
     const res = await db.query(sql`
       SELECT TABLE_SCHEMA, TABLE_NAME
       FROM information_schema.tables
-      WHERE table_schema = (SELECT DATABASE())
+      WHERE table_type != 'VIEW' AND table_schema = (SELECT DATABASE())
+    `)
+    return res.map(r => ({ schema: r.TABLE_SCHEMA, table: r.TABLE_NAME }))
+  }
+}
+
+async function listViews (db, sql, schemas) {
+  if (schemas) {
+    const schemaList = sql.__dangerous__rawValue(schemas.map(s => `'${s}'`))
+    const res = await db.query(sql`
+      SELECT TABLE_SCHEMA, TABLE_NAME
+      FROM information_schema.tables
+      WHERE table_type = 'VIEW' AND table_schema in (${schemaList})
+    `)
+    return res.map(r => ({ schema: r.TABLE_SCHEMA, table: r.TABLE_NAME }))
+  } else {
+    const res = await db.query(sql`
+      SELECT TABLE_SCHEMA, TABLE_NAME
+      FROM information_schema.tables
+      WHERE table_type = 'VIEW' AND table_schema = (SELECT DATABASE())
     `)
     return res.map(r => ({ schema: r.TABLE_SCHEMA, table: r.TABLE_NAME }))
   }
@@ -110,6 +129,7 @@ async function updateMany (db, sql, table, schema, criteria, input, fieldsToRetr
 
 module.exports = {
   listTables,
+  listViews,
   listColumns,
   listConstraints,
   updateOne,
